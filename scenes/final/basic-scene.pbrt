@@ -1,3 +1,60 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8972eb449a3f617e6ef03675f98f81e4ec543092c1c846ffea73770c30d5270a
-size 1396
+
+Film "image"
+    "integer xresolution" 990 "integer yresolution" 540
+    "string filename" [ "basic.exr" ]
+
+Scale -1 1 1
+#LookAt 0 5 19   0 6 0  0 1 0
+LookAt -1 3 1   0 3 -19  0 1 0
+Camera "perspective" "float fov" 50
+
+Sampler "halton" "integer pixelsamples" 16
+Integrator "volpath"
+
+WorldBegin
+
+###########################################################################
+# lights
+
+AttributeBegin
+  Rotate 45 0 1 0
+  Rotate -90 1 0 0
+  LightSource "infinite"
+     "string mapname" "Environment_Maps/kloppenheim_02_4k.png"
+     #"rgb scale" [ 5 5 5 ]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L" [ 55 24 5 ]
+  Translate -5.48303 6.64618 -26.2101
+  Shape "sphere" "float radius" [0.8]
+AttributeEnd
+
+MakeNamedMedium "mymedium"
+  "string type" "heterogeneous"
+  "rgb sigma_a" [ 0.5 0.5 0.5 ]
+  "rgb sigma_s" [ 2.55 2.55 2.55 ]
+  #"float scale" 3
+  "point p0" [ -7 5 -27.8 ]
+  "point p1" [ -3.88 8.2 -24.6 ]
+  "float density" 0.005
+AttributeBegin
+  MediumInterface "mymedium" ""
+  Translate -5.48303 6.64618 -26.2101
+  Material "none"
+  Shape "sphere" "float radius" [1.6]
+AttributeEnd
+
+#Include "Materials/basic-materials.pbrt"
+#Include "Materials/grass-materials.pbrt"
+
+Include "Geometry/mountain-geometry.pbrt"
+Include "Geometry/simple-land-geometry.pbrt"
+
+#Include "Geometry/land-geometry.pbrt"
+#Include "Geometry/water-geometry.pbrt"
+#Include "Geometry/trees-geometry.pbrt"
+#Include "Geometry/basic-geometry.pbrt"
+
+WorldEnd
