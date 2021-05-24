@@ -1,0 +1,57 @@
+# Blender MTL File: 'final-project-scene.blend'
+# Material Count: 5
+
+newmtl Bark01_SHD
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump /Users/halde/Documents/CS348B/vsx/JA19_TsugaDiversifolia/JA19_Bark01_nml_su.png
+map_Kd /Users/halde/Documents/CS348B/vsx/JA19_TsugaDiversifolia/JA19_Bark01_dif_su.png
+
+newmtl Leaf01_su_SHD
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl Material.003
+Ns 900.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.301591 0.604468 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl Material.006
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.002244 0.012470 0.006060
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl grass
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump /Users/halde/Documents/CS348B/Blender/Textures/Stylized_Grass/Stylized_Grass_001_normal.jpg
+map_Kd -s 5.000000 5.000000 1.000000 /Users/halde/Documents/CS348B/Blender/Textures/Stylized_Grass/Stylized_Grass_001_basecolor.jpg
+map_Ns /Users/halde/Documents/CS348B/Blender/Textures/Stylized_Grass/Stylized_Grass_001_roughness.jpg
