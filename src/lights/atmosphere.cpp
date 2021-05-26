@@ -36,187 +36,104 @@
 #include "paramset.h"
 #include "sampling.h"
 #include "stats.h"
+#include "math.h"
 
 namespace pbrt {
 
-// AtmosphereAreaLight Method Definitions
-AtmosphereAreaLight::AtmosphereAreaLight(const Transform &LightToWorld,
-                                     const Spectrum &L, int nSamples,
-                                     const std::string &texmap)
-    : Light((int)LightFlags::atmosphere, LightToWorld, MediumInterface(),
-            nSamples) {
-    
-    // Parameters
-    Ray ray;
-    Vector3f sunDir;
+// Atmosphere Method Definitions
+Atmosphere::Atmosphere(const Spectrum &sunIntensity, const Vector3f &sunDir)
+    : sunIntensity(sunIntensity),
+      sunDir(sunDir) {
+    betaRayleigh = Vector3f(5.5e-6, 13.0e-6, 22.4e-6);
+    betaMie = Vector3f(21e-6, 21e-6, 21e-6);
+    betaAbsorption = Vector3f(2.04e-5, 4.97e-5, 1.95e-6);
+    g = 0.76;
+    absorptionHeightMax = 10; // <- random value ??
+}
 
-    Vector3f betaRayleigh(5.5e-6, 13.0e-6, 22.4e-6);
-    Float betaMie = 21e-6;
-    Vector3f betaAbsorption(2.04e-5, 4.97e-5, 1.95e-6);
-    Float g = 0.76;
-    Float sunIntensity = 40.0;
-
+Spectrum Atmosphere::ComputeScattering(const Ray &ray, const SurfaceInteraction &isect) {
     Float mu = Dot(ray.d, sunDir);
     Float mumu = mu * mu;
     Float gg = g * g;
     Float phaseRayleigh = 3.0 / (16.0 * Pi) * (1.0 + mumu);
     Float phaseMie = 3.0 / (8.0 * Pi) * ((1.0 - gg) * (mumu + 1.0)) / (std::pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
 
+    // calculate step size based on distance to surface intersection?
+    Float STEP_COUNT = 5;
+    Float stepDist = Distance(isect.p, ray.o) / STEP_COUNT;
+    Float stepSize = stepDist;
 
+    Vector3f accumulatedRayleigh(0., 0., 0.);
+    Vector3f accumulatedMie(0., 0., 0.);
+    Vector3f opticalDepth(0., 0., 0.);
 
+    // start at t = 0
+    Float stepT = stepSize;
 
+    // loop over step count:
+    for (int i = 0; i < STEP_COUNT; i++) {
+        // get point on ray at step t
+        Point3f curPosition = ray(stepT);
 
+        // get height (altitude?) of point
+        Float curHeight = curPosition.y;
 
+        // calculate current optical depth Rayleigh and Mie
+        Float curOpticalDepthRayleigh = exp(-curHeight) * stepDist;
+        Float curOpticalDepthMie = exp(-curHeight) * stepDist;
 
+        // calculate current Optical Depth Ozone
+        Float curOpticalDepthOzone = (1.0 / cosh(absorptionHeightMax - curHeight));
+        curOpticalDepthOzone *= curOpticalDepthRayleigh * stepDist;
 
+        // add optical depth R M O to overall optical depth
+        Vector3f opticalDepth(curOpticalDepthRayleigh, curOpticalDepthMie, curOpticalDepthOzone);
 
+        // Sample light ray at current ray step sample -> optical depth light
+        // Vector3f opticalDepthLight = SampleLightRay(curPosition);
+        Vector3f opticalDepthLight(1., 1., 1.); // <- abitrarily chosen
 
+        // calculate attenuation from betaR,M,A , optical depth and optical depth light
+        Vector3f r = betaRayleigh * (opticalDepth.x + opticalDepthLight.x) + 
+                     betaMie * (opticalDepth.y + opticalDepthLight.y) +
+                     betaAbsorption * (opticalDepth.z + opticalDepthLight.z);
+        Vector3f attn(exp(-r.x), exp(-r.y), exp(-r.z));
 
+        // calculate accumulated Rayleigh and Mie
+        accumulatedRayleigh += curOpticalDepthRayleigh * attn;
+        accumulatedMie += curOpticalDepthMie * attn;
 
-
-
-
-
-
-
-    // Read texel data from _texmap_ and initialize _Lmap_
-    Point2i resolution;
-    std::unique_ptr<RGBSpectrum[]> texels(nullptr);
-    if (texmap != "") {
-        texels = ReadImage(texmap, &resolution);
-        if (texels)
-            for (int i = 0; i < resolution.x * resolution.y; ++i)
-                texels[i] *= L.ToRGBSpectrum();
+        // increment primary step position
+        stepT += stepSize;
     }
-    if (!texels) {
-        resolution.x = resolution.y = 1;
-        texels = std::unique_ptr<RGBSpectrum[]>(new RGBSpectrum[1]);
-        texels[0] = L.ToRGBSpectrum();
-    }
-    Lmap.reset(new MIPMap<RGBSpectrum>(resolution, texels.get()));
+    // calculate scattering color based on sun intensity * phase functions * beta * accumulated rayleigh
+    Vector3f R(phaseRayleigh * betaRayleigh.x * accumulatedRayleigh.x,
+               phaseRayleigh * betaRayleigh.y * accumulatedRayleigh.y,
+               phaseRayleigh * betaRayleigh.z * accumulatedRayleigh.z);
+    Vector3f M(phaseMie * betaMie.x * accumulatedMie.x,
+               phaseMie * betaMie.y * accumulatedMie.y,
+               phaseMie * betaMie.z * accumulatedMie.z);
+    Spectrum scatteringColor = sunIntensity * (R + M).x;
 
-    // Initialize sampling PDFs for atmosphere area light
+    // calculate opacity of color based on same ^ + optical depth z
+    // Float scatteringOpacity = exp((betaMie.y * opticalDepth.y + betaRayleigh.x * opticalDepth.x * betaAbsorption.z * opticalDepth.z));
+    // scatteringColor *= scatteringOpacity;
+    // std::cout << scatteringColor << std::endl;
+    return scatteringColor * 1000;
 
-    // Compute scalar-valued image _img_ from environment map
-    int width = 2 * Lmap->Width(), height = 2 * Lmap->Height();
-    std::unique_ptr<Float[]> img(new Float[width * height]);
-    float fwidth = 0.5f / std::min(width, height);
-    ParallelFor(
-        [&](int64_t v) {
-            Float vp = (v + .5f) / (Float)height;
-            Float sinTheta = std::sin(Pi * (v + .5f) / height);
-            for (int u = 0; u < width; ++u) {
-                Float up = (u + .5f) / (Float)width;
-                img[u + v * width] = Lmap->Lookup(Point2f(up, vp), fwidth).y();
-                img[u + v * width] *= sinTheta;
-            }
-        },
-        height, 32);
+    // this makes sense but not sure if constants are correct??
 
-    // Compute sampling distributions for rows and columns of image
-    distribution.reset(new Distribution2D(img.get(), width, height));
+    // Questions: how do we get the actual atmosphere background? Since it exists at infinity?
+    // or do we just have a max depth for our ray and just calculate the color for that pixel?
+    // How do we know what is the right distance for atmospheric scattering?
+    // Can we use the same model as above to compute scattering color and opacity?
+    // So since we are at max optical depth, would opacity just be 1? and essentially ignored?
 }
 
-Spectrum AtmosphereAreaLight::Power() const {
-    return Pi * worldRadius * worldRadius *
-           Spectrum(Lmap->Lookup(Point2f(.5f, .5f), .5f),
-                    SpectrumType::Illuminant);
-}
-
-Spectrum AtmosphereAreaLight::Le(const RayDifferential &ray) const {
-    Vector3f w = Normalize(WorldToLight(ray.d));
-    Point2f st(SphericalPhi(w) * Inv2Pi, SphericalTheta(w) * InvPi);
-    return Spectrum(Lmap->Lookup(st), SpectrumType::Illuminant);
-}
-
-Spectrum AtmosphereAreaLight::Sample_Li(const Interaction &ref, const Point2f &u,
-                                      Vector3f *wi, Float *pdf,
-                                      VisibilityTester *vis) const {
-    ProfilePhase _(Prof::LightSample);
-    // Find $(u,v)$ sample coordinates in atmosphere light texture
-    Float mapPdf;
-    Point2f uv = distribution->SampleContinuous(u, &mapPdf);
-    if (mapPdf == 0) return Spectrum(0.f);
-
-    // Convert atmosphere light sample point to direction
-    Float theta = uv[1] * Pi, phi = uv[0] * 2 * Pi;
-    Float cosTheta = std::cos(theta), sinTheta = std::sin(theta);
-    Float sinPhi = std::sin(phi), cosPhi = std::cos(phi);
-    *wi =
-        LightToWorld(Vector3f(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta));
-
-    // Compute PDF for sampled atmosphere light direction
-    *pdf = mapPdf / (2 * Pi * Pi * sinTheta);
-    if (sinTheta == 0) *pdf = 0;
-
-    // Return radiance value for atmosphere light direction
-    *vis = VisibilityTester(ref, Interaction(ref.p + *wi * (2 * worldRadius),
-                                             ref.time, mediumInterface));
-    return Spectrum(Lmap->Lookup(uv), SpectrumType::Illuminant);
-}
-
-Float AtmosphereAreaLight::Pdf_Li(const Interaction &, const Vector3f &w) const {
-    ProfilePhase _(Prof::LightPdf);
-    Vector3f wi = WorldToLight(w);
-    Float theta = SphericalTheta(wi), phi = SphericalPhi(wi);
-    Float sinTheta = std::sin(theta);
-    if (sinTheta == 0) return 0;
-    return distribution->Pdf(Point2f(phi * Inv2Pi, theta * InvPi)) /
-           (2 * Pi * Pi * sinTheta);
-}
-
-Spectrum AtmosphereAreaLight::Sample_Le(const Point2f &u1, const Point2f &u2,
-                                      Float time, Ray *ray, Normal3f *nLight,
-                                      Float *pdfPos, Float *pdfDir) const {
-    ProfilePhase _(Prof::LightSample);
-    // Compute direction for atmosphere light sample ray
-    Point2f u = u1;
-
-    // Find $(u,v)$ sample coordinates in atmosphere light texture
-    Float mapPdf;
-    Point2f uv = distribution->SampleContinuous(u, &mapPdf);
-    if (mapPdf == 0) return Spectrum(0.f);
-    Float theta = uv[1] * Pi, phi = uv[0] * 2.f * Pi;
-    Float cosTheta = std::cos(theta), sinTheta = std::sin(theta);
-    Float sinPhi = std::sin(phi), cosPhi = std::cos(phi);
-    Vector3f d =
-        -LightToWorld(Vector3f(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta));
-    *nLight = (Normal3f)d;
-
-    // Compute origin for atmosphere light sample ray
-    Vector3f v1, v2;
-    CoordinateSystem(-d, &v1, &v2);
-    Point2f cd = ConcentricSampleDisk(u2);
-    Point3f pDisk = worldCenter + worldRadius * (cd.x * v1 + cd.y * v2);
-    *ray = Ray(pDisk + worldRadius * -d, d, Infinity, time);
-
-    // Compute _AtmosphereAreaLight_ ray PDFs
-    *pdfDir = sinTheta == 0 ? 0 : mapPdf / (2 * Pi * Pi * sinTheta);
-    *pdfPos = 1 / (Pi * worldRadius * worldRadius);
-    return Spectrum(Lmap->Lookup(uv), SpectrumType::Illuminant);
-}
-
-void AtmosphereAreaLight::Pdf_Le(const Ray &ray, const Normal3f &, Float *pdfPos,
-                               Float *pdfDir) const {
-    ProfilePhase _(Prof::LightPdf);
-    Vector3f d = -WorldToLight(ray.d);
-    Float theta = SphericalTheta(d), phi = SphericalPhi(d);
-    Point2f uv(phi * Inv2Pi, theta * InvPi);
-    Float mapPdf = distribution->Pdf(uv);
-    *pdfDir = mapPdf / (2 * Pi * Pi * std::sin(theta));
-    *pdfPos = 1 / (Pi * worldRadius * worldRadius);
-}
-
-std::shared_ptr<AtmosphereAreaLight> CreateAtmosphereLight(
-    const Transform &light2world, const ParamSet &paramSet) {
-    Spectrum L = paramSet.FindOneSpectrum("L", Spectrum(1.0));
-    Spectrum sc = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
-    std::string texmap = paramSet.FindOneFilename("mapname", "");
-    int nSamples = paramSet.FindOneInt("samples",
-                                       paramSet.FindOneInt("nsamples", 1));
-    if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
-    return std::make_shared<AtmosphereAreaLight>(light2world, L * sc, nSamples,
-                                               texmap);
+std::shared_ptr<Atmosphere> CreateAtmosphere() {
+    Spectrum sunIntensity(40.0f);
+    Vector3f sunDir(0., 1., 0.);
+    return std::make_shared<Atmosphere>(sunIntensity, sunDir);
 }
 
 }  // namespace pbrt

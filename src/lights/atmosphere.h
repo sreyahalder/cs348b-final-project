@@ -35,12 +35,12 @@
 #pragma once
 #endif
 
-#ifndef PBRT_LIGHTS_INFINITE_H
-#define PBRT_LIGHTS_INFINITE_H
+#ifndef PBRT_ATMOSPHERE_H
+#define PBRT_ATMOSPHERE_H
 
 // lights/atmosphere.h*
 #include "pbrt.h"
-#include "light.h"
+#include "medium.h"
 #include "texture.h"
 #include "shape.h"
 #include "scene.h"
@@ -48,37 +48,23 @@
 
 namespace pbrt {
 
-// AtmosphereAreaLight Declarations
-class AtmosphereAreaLight : public Light {
+// Atmosphere Declarations
+class Atmosphere {
   public:
-    // AtmosphereAreaLight Public Methods
-    AtmosphereAreaLight(const Transform &LightToWorld, const Spectrum &power,
-                      int nSamples, const std::string &texmap);
-    void Preprocess(const Scene &scene) {
-        scene.WorldBound().BoundingSphere(&worldCenter, &worldRadius);
-    }
-    Spectrum Power() const;
-    Spectrum Le(const RayDifferential &ray) const;
-    Spectrum Sample_Li(const Interaction &ref, const Point2f &u, Vector3f *wi,
-                       Float *pdf, VisibilityTester *vis) const;
-    Float Pdf_Li(const Interaction &, const Vector3f &) const;
-    Spectrum Sample_Le(const Point2f &u1, const Point2f &u2, Float time,
-                       Ray *ray, Normal3f *nLight, Float *pdfPos,
-                       Float *pdfDir) const;
-    void Pdf_Le(const Ray &, const Normal3f &, Float *pdfPos,
-                Float *pdfDir) const;
+    // Atmosphere Public Methods
+    Atmosphere(const Spectrum &sunIntensity, const Vector3f &sunDir);
+    Spectrum ComputeScattering(const Ray &ray, const SurfaceInteraction &isect);
 
   private:
-    // AtmosphereAreaLight Private Data
-    std::unique_ptr<MIPMap<RGBSpectrum>> Lmap;
+    // Atmosphere Private Data
     Point3f worldCenter;
-    Float worldRadius;
-    std::unique_ptr<Distribution2D> distribution;
+    Float worldRadius, g, absorptionHeightMax;
+    Spectrum sunIntensity;
+    Vector3f sunDir, betaRayleigh, betaMie, betaAbsorption;
 };
 
-std::shared_ptr<AtmosphereAreaLight> CreateAtmosphereLight(
-    const Transform &light2world, const ParamSet &paramSet);
+std::shared_ptr<Atmosphere> CreateAtmosphere();
 
 }  // namespace pbrt
 
-#endif  // PBRT_LIGHTS_INFINITE_H
+#endif  // PBRT_ATMOSPHERE_H
