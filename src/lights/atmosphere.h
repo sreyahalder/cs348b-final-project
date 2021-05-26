@@ -58,7 +58,7 @@ class Atmosphere {
   private:
     // Atmosphere Private Data
     Point3f worldCenter;
-    Float worldRadius, g, absorptionHeightMax;
+    Float worldRadius, g, absorptionHeightMax, rayleighScale, mieScale, absorptionFalloff;
     Spectrum sunIntensity;
     Vector3f sunDir, betaRayleigh, betaMie, betaAbsorption;
 };

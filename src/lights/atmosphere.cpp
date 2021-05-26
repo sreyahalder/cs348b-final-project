@@ -48,7 +48,10 @@ Atmosphere::Atmosphere(const Spectrum &sunIntensity, const Vector3f &sunDir)
     betaMie = Vector3f(21e-6, 21e-6, 21e-6);
     betaAbsorption = Vector3f(2.04e-5, 4.97e-5, 1.95e-6);
     g = 0.76;
-    absorptionHeightMax = 10; // <- random value ??
+    rayleighScale = 8500;
+    mieScale = 1200;
+    absorptionHeightMax = 30000;
+    absorptionFalloff = 3000;
 }
 
 Spectrum Atmosphere::ComputeScattering(const Ray &ray, const SurfaceInteraction &isect) {
@@ -79,19 +82,22 @@ Spectrum Atmosphere::ComputeScattering(const Ray &ray, const SurfaceInteraction 
         Float curHeight = curPosition.y;
 
         // calculate current optical depth Rayleigh and Mie
-        Float curOpticalDepthRayleigh = exp(-curHeight) * stepDist;
-        Float curOpticalDepthMie = exp(-curHeight) * stepDist;
+        Float curOpticalDepthRayleigh = exp(-curHeight / rayleighScale) * stepDist;
+        Float curOpticalDepthMie = exp(-curHeight / mieScale) * stepDist;
 
         // calculate current Optical Depth Ozone
-        Float curOpticalDepthOzone = (1.0 / cosh(absorptionHeightMax - curHeight));
+        Float curOpticalDepthOzone = 1.0 / cosh((absorptionHeightMax - curHeight) / absorptionFalloff);
         curOpticalDepthOzone *= curOpticalDepthRayleigh * stepDist;
 
         // add optical depth R M O to overall optical depth
-        Vector3f opticalDepth(curOpticalDepthRayleigh, curOpticalDepthMie, curOpticalDepthOzone);
+        opticalDepth += Vector3f(curOpticalDepthRayleigh, curOpticalDepthMie, curOpticalDepthOzone);
 
         // Sample light ray at current ray step sample -> optical depth light
         // Vector3f opticalDepthLight = SampleLightRay(curPosition);
         Vector3f opticalDepthLight(1., 1., 1.); // <- abitrarily chosen
+
+        // QUESTION: when we sample light rays, do we find the intersection between our step
+        // along the original ray and the upper atmosphere? 
 
         // calculate attenuation from betaR,M,A , optical depth and optical depth light
         Vector3f r = betaRayleigh * (opticalDepth.x + opticalDepthLight.x) + 
@@ -106,6 +112,7 @@ Spectrum Atmosphere::ComputeScattering(const Ray &ray, const SurfaceInteraction 
         // increment primary step position
         stepT += stepSize;
     }
+
     // calculate scattering color based on sun intensity * phase functions * beta * accumulated rayleigh
     Vector3f R(phaseRayleigh * betaRayleigh.x * accumulatedRayleigh.x,
                phaseRayleigh * betaRayleigh.y * accumulatedRayleigh.y,
@@ -113,15 +120,20 @@ Spectrum Atmosphere::ComputeScattering(const Ray &ray, const SurfaceInteraction 
     Vector3f M(phaseMie * betaMie.x * accumulatedMie.x,
                phaseMie * betaMie.y * accumulatedMie.y,
                phaseMie * betaMie.z * accumulatedMie.z);
-    Spectrum scatteringColor = sunIntensity * (R + M).x;
+    Spectrum scatteringColor;
+    scatteringColor[0] = sunIntensity[0] * (R + M).x;
+    scatteringColor[1] = sunIntensity[1] * (R + M).y;
+    scatteringColor[2] = sunIntensity[2] * (R + M).z;
+
+    Vector3f sO = betaMie * opticalDepth.y + betaRayleigh * opticalDepth.x + betaAbsorption * opticalDepth.z;
 
     // calculate opacity of color based on same ^ + optical depth z
-    // Float scatteringOpacity = exp((betaMie.y * opticalDepth.y + betaRayleigh.x * opticalDepth.x * betaAbsorption.z * opticalDepth.z));
-    // scatteringColor *= scatteringOpacity;
-    // std::cout << scatteringColor << std::endl;
-    return scatteringColor * 1000;
+    Vector3f scatteringOpacity(exp(-sO.x), exp(-sO.y), exp(-sO.z));
+    scatteringColor[0] *= scatteringOpacity.x; 
+    scatteringColor[1] *= scatteringOpacity.y;
+    scatteringColor[2] *= scatteringOpacity.z;
 
-    // this makes sense but not sure if constants are correct??
+    return scatteringColor * 100;
 
     // Questions: how do we get the actual atmosphere background? Since it exists at infinity?
     // or do we just have a max depth for our ray and just calculate the color for that pixel?
@@ -132,8 +144,8 @@ Spectrum Atmosphere::ComputeScattering(const Ray &ray, const SurfaceInteraction 
 
 std::shared_ptr<Atmosphere> CreateAtmosphere() {
     Spectrum sunIntensity(40.0f);
-    Vector3f sunDir(0., 1., 0.);
-    return std::make_shared<Atmosphere>(sunIntensity, sunDir);
+    Vector3f sunDir(0., 1., -1.);
+    return std::make_shared<Atmosphere>(sunIntensity, Normalize(sunDir));
 }
 
 }  // namespace pbrt
