@@ -39,6 +39,7 @@
 #include "paramset.h"
 #include "scene.h"
 #include "stats.h"
+#include "../lights/atmosphere.h"
 
 namespace pbrt {
 
@@ -60,6 +61,7 @@ Spectrum VolPathIntegrator::Li(const RayDifferential &r, const Scene &scene,
     RayDifferential ray(r);
     bool specularBounce = false;
     int bounces;
+    std::shared_ptr<Atmosphere> atmosphere = CreateAtmosphere();
     // Added after book publication: etaScale tracks the accumulated effect
     // of radiance scaling due to rays passing through refractive
     // boundaries (see the derivation on p. 527 of the third edition). We
@@ -89,7 +91,7 @@ Spectrum VolPathIntegrator::Li(const RayDifferential &r, const Scene &scene,
             const Distribution1D *lightDistrib =
                 lightDistribution->Lookup(mi.p);
             L += beta * UniformSampleOneLight(mi, scene, arena, sampler, true,
-                                              lightDistrib);
+                                             lightDistrib);
 
             Vector3f wo = -ray.d, wi;
             mi.phase->Sample_p(wo, &wi, sampler.Get2D());
@@ -126,6 +128,10 @@ Spectrum VolPathIntegrator::Li(const RayDifferential &r, const Scene &scene,
                 lightDistribution->Lookup(isect.p);
             L += beta * UniformSampleOneLight(isect, scene, arena, sampler,
                                               true, lightDistrib);
+            // Float haze_rgb[3] = {0.f, .163f, .174f};
+            // Spectrum haze = Spectrum::FromRGB(haze_rgb);
+            // L += beta * Distance(ray.o, isect.p)/100 * haze;
+            L += beta * atmosphere->ComputeScattering(ray, isect);
 
             // Sample BSDF to get new path direction
             Vector3f wo = -ray.d, wi;
