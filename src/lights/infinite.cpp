@@ -36,6 +36,7 @@
 #include "paramset.h"
 #include "sampling.h"
 #include "stats.h"
+#include "atmosphere.h"
 
 namespace pbrt {
 
@@ -48,7 +49,25 @@ InfiniteAreaLight::InfiniteAreaLight(const Transform &LightToWorld,
     // Read texel data from _texmap_ and initialize _Lmap_
     Point2i resolution;
     std::unique_ptr<RGBSpectrum[]> texels(nullptr);
-    if (texmap != "") {
+    if (texmap == "./atmosphere") {
+        std::shared_ptr<Atmosphere> atmosphere = CreateAtmosphere();
+        resolution = Point2i(4096, 2048);
+        texels = std::unique_ptr<RGBSpectrum[]>(new RGBSpectrum[resolution.x * resolution.y]);
+        ParallelFor(
+        [&](int64_t y) {
+            Float v = Float(y) / resolution.y;
+            Float theta = Pi * v;
+            for (int x = 0; x < resolution.x; x++) {
+                Float u = Float(x) / resolution.x;
+                Float phi = Pi * Pi * u;
+                Vector3f dir = SphericalDirection(sin(theta), cos(theta), phi);
+                Ray ray(Point3f(0., 0., 0.), dir);
+                SurfaceInteraction isect;
+                texels[x + y * resolution.y] = atmosphere->ComputeScattering(ray, isect, true);
+            }
+        },
+        resolution.y, 32);
+    } else if (texmap != "") {
         texels = ReadImage(texmap, &resolution);
         if (texels)
             for (int i = 0; i < resolution.x * resolution.y; ++i)

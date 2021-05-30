@@ -53,12 +53,14 @@ class Atmosphere {
   public:
     // Atmosphere Public Methods
     Atmosphere(const Spectrum &sunIntensity, const Vector3f &sunDir);
-    Spectrum ComputeScattering(const Ray &ray, const SurfaceInteraction &isect);
+    Spectrum ComputeScattering(const Ray &ray, const SurfaceInteraction &isect, const bool renderAtmosphere);
+    Vector3f SampleLightRay(const Ray &r);
 
   private:
     // Atmosphere Private Data
-    Point3f worldCenter;
-    Float worldRadius, g, absorptionHeightMax, rayleighScale, mieScale, absorptionFalloff;
+    Point3f moon;
+    Float worldRadius, g, absorptionHeightMax, Hr, Hm, absorptionFalloff,
+          step_count, light_step_count, earthRadius, atmosphereRadius;
     Spectrum sunIntensity;
     Vector3f sunDir, betaRayleigh, betaMie, betaAbsorption;
 };

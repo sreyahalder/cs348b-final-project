@@ -105,10 +105,11 @@ Spectrum VolPathIntegrator::Li(const RayDifferential &r, const Scene &scene,
             if (bounces == 0 || specularBounce) {
                 // Add emitted light at path vertex or from the environment
                 if (foundIntersection)
-                    L += beta * isect.Le(-ray.d);
+                    L += beta * isect.Le(-ray.d) * 0.05;
                 else
-                    for (const auto &light : scene.infiniteLights)
-                        L += beta * light->Le(ray);
+                    L += beta * atmosphere->ComputeScattering(ray, isect, true);
+                    // for (const auto &light : scene.infiniteLights)
+                    //     L += beta * light->Le(ray);
             }
 
             // Terminate path if ray escaped or _maxDepth_ was reached
@@ -128,10 +129,9 @@ Spectrum VolPathIntegrator::Li(const RayDifferential &r, const Scene &scene,
                 lightDistribution->Lookup(isect.p);
             L += beta * UniformSampleOneLight(isect, scene, arena, sampler,
                                               true, lightDistrib);
-            // Float haze_rgb[3] = {0.f, .163f, .174f};
-            // Spectrum haze = Spectrum::FromRGB(haze_rgb);
-            // L += beta * Distance(ray.o, isect.p)/100 * haze;
-            L += beta * atmosphere->ComputeScattering(ray, isect);
+            
+            // Compute atmospheric scattering for aerial perspective
+            L += beta * atmosphere->ComputeScattering(ray, isect, false);
 
             // Sample BSDF to get new path direction
             Vector3f wo = -ray.d, wi;

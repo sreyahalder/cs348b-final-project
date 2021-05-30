@@ -1,3 +1,94 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f0cd34037c4e65e22751e4001bd84ad9a626a58db1c6405ae6e262673778596d
-size 2268
+Texture "leaf-alpha" "float" "imagemap"
+    "string filename" "Objects/textures/JA19_Leaf01_alp_su.png"
+
+# grass material
+Texture "grass-kd" "color" "imagemap"
+    "string filename" "Textures/Stylized_Grass/Stylized_Grass_001_basecolor.png"
+    "float uscale" 10
+    "float vscale" 10
+Texture "grass-bump" "float" "imagemap"
+    "string filename" "Textures/Stylized_Grass/Stylized_Grass_001_normal.png"
+Texture "grass-roughness" "float" "imagemap"
+    "string filename" "Textures/Stylized_Grass/Stylized_Grass_001_roughness.png"
+MakeNamedMaterial "grass_mat" 
+        "string type" [ "uber" ] 
+        "texture Kd" "grass-kd"
+        "texture bumpmap" "grass-bump"
+        "texture roughness" "grass-roughness"
+
+# mountain material
+Texture "mountain-kd" "color" "imagemap"
+    "string filename" "Textures/Mountain/Rock_028_COLOR.png"
+    "float uscale" 20
+    "float vscale" 20
+Texture "mountain-bump" "float" "imagemap"
+    "string filename" "Textures/Mountain/Rock_028_NORM.png"
+Texture "mountain-roughness" "float" "imagemap"
+    "string filename" "Textures/Mountain/Rock_028_ROUGH.png"
+MakeNamedMaterial "mountain_mat" 
+        "string type" [ "uber" ] 
+        "texture Kd" "mountain-kd"
+        "texture bumpmap" "mountain-bump"
+        "texture roughness" "mountain-roughness"
+
+# water material
+Texture "water-bump" "float" "imagemap"
+    "string filename" "Textures/water_bump.png"
+MakeNamedMaterial "water_mat"
+        "string type" ["mirror"]
+        "texture bumpmap" "water-bump"
+MakeNamedMaterial "water_mat1"
+        "string type" ["uber"]
+        "rgb Kd" [ 0.301591 0.604468 0.800000 ]
+        "rgb Ks" [ 0.9 0.9 0.9 ]
+        "float eta" 1.333
+        "float roughness" 0
+        "texture bumpmap" "water-bump"
+
+# mountain2 material
+MakeNamedMaterial "mountain_mat2"
+        "string type" ["matte"]
+        "rgb Kd" [ 0.2244 0.12470 0.6060 ]
+
+# leaf material
+Texture "leaf-kd" "color" "imagemap"
+    "string filename" "Objects/textures/JA19_Leaf01Front_dif_su.png"
+Texture "leaf-bump" "float" "imagemap"
+    "string filename" "Objects/textures/JA19_Leaf01_nml_su.png"
+MakeNamedMaterial "leaf_mat" 
+        "string type" [ "uber" ] 
+        "texture Kd" "leaf-kd"
+        "texture bumpmap" "leaf-bump"
+
+# bark material
+Texture "bark-kd" "color" "imagemap"
+    "string filename" "Objects/textures/JA19_Bark01_dif_su.png"
+Texture "bark-bump" "float" "imagemap"
+    "string filename" "Objects/textures/JA19_Bark01_nml_su.png"
+MakeNamedMaterial "bark_mat" 
+        "string type" [ "uber" ] 
+        "texture Kd" "bark-kd"
+        "texture bumpmap" "bark-bump"
+
+# skin material
+Texture "skin-kd" "color" "imagemap"
+    "string filename" "Textures/Human_skin_001_COLOR.png"
+Texture "skin-ss" "color" "imagemap"
+    "string filename" "Textures/Human_skin_001_SS.png"
+MakeNamedMaterial "skin_mat"
+    "string type" ["disney"]
+    "texture color" "skin-kd"
+    "float eta" 1.45
+    "float roughness" 0.9
+
+# dress material
+Texture "dress-kd" "color" "imagemap"
+    "string filename" "Textures/Fabric_Silk_001_basecolor.png"
+MakeNamedMaterial "dress_mat"
+    "string type" [ "uber" ]
+    "texture Kd" "dress-kd"
+
+# hair material
+MakeNamedMaterial "hair_mat"
+    "string type" [ "hair" ]
+    "float eumelanin" 1.8
