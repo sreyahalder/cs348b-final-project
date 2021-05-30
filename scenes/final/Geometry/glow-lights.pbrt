@@ -1,0 +1,90 @@
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -10.4 2.2 -11.5
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -8.3 1.5 -10.3
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -12.1 1.7 -10
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -7.7 1.5 -11
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -6.5 1.5 -11.6
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -13.7 1.9 -11
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -9.4 1.8 -12.9
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -8.9 1.9 -13.6
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -7.3 1.5 -14.4
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -10.1 2.1 -13.8
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -11.2 1.9 -15.7
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+AttributeBegin
+  AreaLightSource "diffuse"
+  "rgb L"[ 27 9 2.5 ]
+  Translate -10.4 1.6 -18.4
+  Shape "sphere" "float radius" [0.015]
+AttributeEnd
+
+#AttributeBegin
+#  MediumInterface "mymedium" ""
+#  Translate -5.48303 6.64618 -26.2101
+#  Material "none"
+#  Shape "sphere" "float radius" [1.6]
+#AttributeEnd
